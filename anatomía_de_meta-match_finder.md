@@ -192,17 +192,20 @@ etc.) que sólo tienen sentido para un viaje compartido."
 `RoommateIntent`/`PizzaShareIntent` con exactamente esta misma forma —
 hereda lo común, agrega lo específico.
 
-### Paso 3 — `domain/repository/RideShareRepository.kt`: el contrato con "la cocina"
+### Paso 3 — `domain/repository/ContractRepository.kt` y `RideShareRepository.kt`: el contrato con "la cocina"
 
 ```kotlin
-interface RideShareRepository {
-    suspend fun getActiveIntentsForUser(userId: String): List<RideShareIntent>
-    suspend fun getCandidateIntents(excludingUserId: String): List<RideShareIntent>
-    fun observeActiveIntentsForUser(userId: String): Flow<List<RideShareIntent>>
-    suspend fun publishIntent(intent: RideShareIntent): RideShareIntent
-    suspend fun formalizeContract(match: MatchResult, participants: List<RideShareIntent>): ContractRecord
+interface ContractRepository<T : ContractIntent, M> {
+    suspend fun getActiveIntentsForUser(userId: String): List<T>
+    suspend fun getCandidateIntents(excludingUserId: String): List<T>
+    fun observeActiveIntentsForUser(userId: String): Flow<List<T>>
+    suspend fun publishIntent(intent: T): T
+    suspend fun formalizeContract(match: M, participants: List<T>): ContractRecord
     // ...
 }
+
+interface RideShareRepository : ContractRepository<RideShareIntent, MatchResult>
+interface PizzaShareRepository : ContractRepository<PizzaShareIntent, PizzaMatchResult>
 ```
 
 **Qué es `interface`:** una lista de "promesas" — funciones que deben
@@ -215,11 +218,23 @@ esperar una respuesta de internet) *sin congelar la pantalla* mientras
 espera. Es la manera moderna de Kotlin de escribir código asíncrono que
 se lee como si fuera síncrono.
 
-**Qué es `Flow<List<RideShareIntent>>`:** un "caño" de datos que puede
-emitir varios valores a través del tiempo (a diferencia de `suspend fun`,
-que da un solo valor y termina). Se usa aquí para que la pantalla se
-actualice sola cada vez que cambian los deseos activos del usuario, sin
-que nadie tenga que refrescar manualmente.
+**Qué es `Flow<List<T>>`:** un "caño" de datos que puede emitir varios
+valores a través del tiempo (a diferencia de `suspend fun`, que da un
+solo valor y termina). Se usa aquí para que la pantalla se actualice sola
+cada vez que cambian los deseos activos del usuario, sin que nadie tenga
+que refrescar manualmente.
+
+**Por qué `ContractRepository<T, M>` apareció hasta la Etapa 2, no desde
+el principio:** con sólo Ride existiendo, escribir una versión genérica
+habría sido diseñar para un "quizás después" — exactamente lo que este
+proyecto evita (ver `CLAUDE.md`, sección Conventions). En cuanto Pizza
+(la segunda vertical real) resultó necesitar la misma forma exacta,
+método por método, la duplicación dejó de ser hipotética y se extrajo:
+`RideShareRepository`/`PizzaShareRepository` ahora son interfaces de una
+sola línea sobre esta base compartida. `T : ContractIntent` es un *bound*
+de tipo genérico — le dice al compilador "trata a `T` como al menos un
+`ContractIntent`", que es lo que permite que `formalizeContract` lea
+campos como `creatorUserId` de un `T` genérico.
 
 ### Paso 4 — `data/mock/MockRideShareRepository.kt`: la cocina de juguete
 
@@ -396,10 +411,12 @@ sequenceDiagram
 > ideas generales sobre arrendamiento en México. Antes de que cualquier
 > contrato real dependa de esto, se debe consultar a un abogado.
 
-Ninguna de las dos verticales está construida todavía (ver
-`CLAUDE.md`, sección "Not yet implemented"). Esta sección documenta los
-requisitos ya reunidos, para que cuando llegue su etapa, el diseño del
-`RoommateIntent` / `PizzaShareIntent` no tenga que inventarse desde cero.
+**Actualización (Etapa 2):** Pizza ya está construida — `PizzaShareIntent`,
+`PizzaShareRepository`, `FindPizzaMatchesUseCase` y las pantallas
+`ui/pizza/` existen y funcionan siguiendo exactamente el diseño descrito
+en §5.2. Roomie (§5.1) sigue siendo la única vertical pendiente (ver
+`CLAUDE.md`, sección "Not yet implemented"); esta sección sigue
+documentando su requisito para cuando llegue su propia etapa.
 
 ### 5.1 Roomie — subarriendo/arrendamiento
 
@@ -458,7 +475,13 @@ negociar quitar una amenidad. El diseño de datos debe soportar esta
 edición **después** de encontrado el match, no forzar republicar desde
 cero.
 
-### 5.2 Pizza (y compras compartidas en general: Costco, Sam's Club, etc.)
+### 5.2 Pizza (y compras compartidas en general: Costco, Sam's Club, etc.) — ✅ construida
+
+Ver `domain/model/PizzaShareIntent.kt`, `domain/model/PizzaMatchResult.kt`
+y `domain/usecase/FindPizzaMatchesUseCase.kt` para la implementación real
+— son el ejemplo más concreto de todo este documento de "concepto
+genérico → clase específica" (Paso 2 de la sección 3), ahora con una
+segunda vertical real al lado de Ride para comparar.
 
 Estructuralmente es casi idéntico a Ride-share, con estos ejes de
 emparejamiento:

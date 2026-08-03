@@ -31,9 +31,9 @@ Status: **MVP iteration 1 of 4** — Module 1 (core engine) + Module 2 (ride
 share matching) are implemented and buildable. Module 3 (chat/handshake
 ticket) and Module 4 (monetization engine, beyond the anti-spam micro-fee)
 are intentionally deferred — see "Not yet implemented" below. The app is
-being grown into a multi-vertical hub (Ride live; **Pizza** and **Roomie**
-staged as "coming soon" cards in `ui/hub/HubScreen.kt`, each a fully
-separate planned/approved stage before being built).
+a multi-vertical hub: **Ride** and **Pizza** are both live; **Roomie** is
+still a "coming soon" card in `ui/hub/HubScreen.kt`, staged as its own
+planned/approved stage before being built.
 
 ## Stack / versions (see `gradle/libs.versions.toml` for exact numbers)
 
@@ -47,43 +47,56 @@ minSdk 24 / targetSdk 37.
 domain/model/       Pure Kotlin data classes. No Android imports. Zero deps.
                      ContractIntent (abstract base, carries
                      legalConsentAcknowledgedAt), RideShareIntent,
-                     MatchResult, ContractRecord/ContractPartySnapshot (the
-                     frozen "this match = a contract" data captured on
+                     PizzaShareIntent, MatchResult, PizzaMatchResult,
+                     ContractRecord/ContractPartySnapshot (the frozen
+                     "this match = a contract" data captured on
                      acceptance), UserRule (sealed), UserIntegrityScore,
                      GeoPoint (Haversine distance + centroid math).
 domain/policy/       PlatformPolicy — every tunable business rule (free-tier
                      limit, micro-fee, verification threshold) in ONE place.
 domain/exception/    MicroFeeRequiredException.
-domain/repository/   RideShareRepository interface. THE seam between domain
-                     and data — every use case/ViewModel depends on this
-                     interface only, never on a concrete implementation.
-                     Also owns formalizeContract/getContractRecord.
-domain/usecase/      PublishRideIntentUseCase, FindMatchesUseCase (the
-                     geospatial/budget matching algorithm — Kotlin mirror of
-                     schema.sql's PostGIS functions), CheckAntiSpamUseCase.
-data/mock/           MockRideShareRepository — in-memory, seeded, what the
-                     app runs on by default. @Singleton, no network.
-data/remote/         SupabaseRideShareRepository — UNFINISHED skeleton
-                     (every method is `TODO()`). See its file doc for the
-                     exact steps to finish it.
+domain/repository/   ContractRepository<T, M> — the generic seam every
+                     vertical's repository extends (getActiveIntentsForUser,
+                     publishIntent, formalizeContract, getPlatformPolicy,
+                     etc.). RideShareRepository and PizzaShareRepository are
+                     both one-line interfaces over it. Every use
+                     case/ViewModel depends on its own vertical's interface
+                     only, never on a concrete implementation.
+domain/usecase/      PublishRideIntentUseCase, FindMatchesUseCase (Ride's
+                     geospatial/budget matching — Kotlin mirror of
+                     schema.sql's PostGIS functions); PublishPizzaIntentUseCase,
+                     FindPizzaMatchesUseCase (Pizza's proximity + fractional-
+                     unit matching). AntiSpamRules.kt holds the ONE
+                     anti-spam rule both CheckAntiSpamUseCase (Ride) and
+                     CheckPizzaAntiSpamUseCase (Pizza) delegate to.
+data/mock/           MockRideShareRepository, MockPizzaShareRepository —
+                     in-memory, seeded, what the app runs on by default.
+                     @Singleton, no network.
+data/remote/         SupabaseRideShareRepository, SupabasePizzaShareRepository
+                     — UNFINISHED skeletons (every method is `TODO()`). See
+                     each file's doc for the exact steps to finish it.
 di/                  Hilt modules. RepositoryModule.kt is THE ONE FILE that
-                     picks Mock vs Supabase — everything else is unaffected
-                     by that choice. DispatchersModule.kt provides qualified
+                     picks Mock vs Supabase, per vertical (one @Binds each)
+                     — everything else is unaffected by that choice.
+                     DispatchersModule.kt provides qualified
                      CoroutineDispatchers for testability.
 ui/theme/            Retro 8-bit design system: Color.kt, Type.kt (monospace
                      everywhere), Shape.kt (zero corner radius), Theme.kt.
 ui/components/       RetroButton, RetroCard, PixelBadge, LegalNoticeCard (the
-                     shared consent gate every Publish screen shows) — the
-                     only widgets screens should build UI out of.
+                     shared consent gate every Publish screen shows),
+                     EstablishmentSuggestionRow (Pizza's chip suggestions)
+                     — the only widgets screens should build UI out of.
 ui/intro/            IntroScreen — the "Wishing Well" brand splash (hand-
                      drawn pixel-art well via Canvas, no image assets).
-ui/hub/              HubScreen — vertical picker (Ride live; Pizza/Roomie
-                     shown as "coming soon" cards, staged separately).
+ui/hub/              HubScreen — vertical picker (Ride + Pizza live; Roomie
+                     shown as a "coming soon" card, staged separately).
 ui/publish/          Publish Intent screen + ViewModel (Ride vertical).
 ui/match/            Match Results screen + ViewModel (Ride vertical).
-MainActivity.kt       NavHost: intro -> hub -> ride (Publish/Matches tab
-                     switch, unchanged in substance). See its file doc for
-                     why Navigation-Compose was adopted here.
+ui/pizza/            Publish + Match Results screen/ViewModel pairs for the
+                     Pizza vertical — same shape as ui/publish + ui/match.
+MainActivity.kt       NavHost: intro -> hub -> {ride, pizza} (each its own
+                     Publish/Matches tab switch). See its file doc for why
+                     Navigation-Compose was adopted here.
 MetaMatchApplication.kt  @HiltAndroidApp entry point.
 ```
 
@@ -94,10 +107,11 @@ Not required to run the app today; becomes load-bearing once
 
 ## The one rule that matters most
 
-**Never import `MockRideShareRepository` or `SupabaseRideShareRepository`
-outside of `di/RepositoryModule.kt`.** Every use case, every ViewModel
-depends on the `RideShareRepository` interface only. This is what makes the
-mock/production swap a one-line change. If you're adding a new use case or
+**Never import a `Mock*Repository` or `Supabase*Repository` outside of
+`di/RepositoryModule.kt`.** Every use case, every ViewModel depends on its
+vertical's repository interface only (`RideShareRepository`,
+`PizzaShareRepository`). This is what makes the mock/production swap a
+one-line change, per vertical. If you're adding a new use case or
 ViewModel and find yourself importing a concrete repository class, stop —
 inject the interface instead.
 
@@ -117,14 +131,18 @@ inject the interface instead.
 
 ## Not yet implemented (do not assume these exist)
 
-- `SupabaseRideShareRepository` — skeleton only, throws `TODO()`.
+- `SupabaseRideShareRepository` / `SupabasePizzaShareRepository` —
+  skeletons only, throw `TODO()`.
 - Any real network/auth calls, Supabase SDK dependency, or API keys.
 - Module 3: visual meeting ticket, in-app chat, `SecurityAuditLog`.
 - Module 4: `MonetizationEngine` interface, payment processing,
   enterprise subscription billing, ID-verification flow.
-- Meta-Match Pizza and Roomie verticals — hub cards exist and are marked
-  "coming soon"; no domain model, repository, or screens exist yet. Each
-  is its own planned/approved stage.
+- Meta-Match Roomie — hub card exists and is marked "coming soon"; no
+  domain model, repository, or screens exist yet. Its own planned/approved
+  stage; see project memory `roomie_pizza_requirements.md` and
+  `anatomía_de_meta-match_finder.md` §5.1 for the gathered requirements
+  (sublease/lease minimum contract fields, objective vs. subjective
+  matching, post-match verification flow, negotiable terms after a match).
 - Contract-record → real written-document generation (PDF/e-signature).
   `ContractRecord` only captures the data; no export flow exists.
 - Instrumented/UI tests (`androidTest/` is currently empty).
@@ -133,6 +151,6 @@ inject the interface instead.
 
 - Open in Android Studio, sync Gradle, Run. No setup, no API keys.
 - `./gradlew testDebugUnitTest` — fast JVM unit tests for `domain/`
-  (`FindMatchesUseCaseTest`, `CheckAntiSpamUseCaseTest`, `GeoPointTest`,
-  `UserIntegrityScoreTest`). These are the tests to run after touching any
-  matching/anti-spam logic.
+  (`FindMatchesUseCaseTest`, `FindPizzaMatchesUseCaseTest`,
+  `CheckAntiSpamUseCaseTest`, `GeoPointTest`, `UserIntegrityScoreTest`).
+  These are the tests to run after touching any matching/anti-spam logic.

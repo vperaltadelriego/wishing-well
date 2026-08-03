@@ -30,6 +30,8 @@ import com.metamatch.app.ui.components.RetroButton
 import com.metamatch.app.ui.hub.HubScreen
 import com.metamatch.app.ui.intro.IntroScreen
 import com.metamatch.app.ui.match.MatchResultsScreen
+import com.metamatch.app.ui.pizza.PizzaMatchResultsScreen
+import com.metamatch.app.ui.pizza.PublishPizzaIntentScreen
 import com.metamatch.app.ui.publish.PublishIntentScreen
 import com.metamatch.app.ui.theme.MetaMatchTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -76,6 +78,7 @@ private object Routes {
     const val INTRO = "intro"
     const val HUB = "hub"
     const val RIDE = "ride"
+    const val PIZZA = "pizza"
 }
 
 @Composable
@@ -102,10 +105,16 @@ private fun WishingWellApp() {
                 )
             }
             composable(Routes.HUB) {
-                HubScreen(onOpenRide = { navController.navigate(Routes.RIDE) })
+                HubScreen(
+                    onOpenRide = { navController.navigate(Routes.RIDE) },
+                    onOpenPizza = { navController.navigate(Routes.PIZZA) },
+                )
             }
             composable(Routes.RIDE) {
                 RideVerticalScreen(navController = navController)
+            }
+            composable(Routes.PIZZA) {
+                PizzaVerticalScreen(navController = navController)
             }
         }
     }
@@ -178,6 +187,77 @@ private fun RideVerticalScreen(navController: NavHostController) {
             when (currentTab) {
                 RideTab.PUBLISH -> PublishIntentScreen()
                 RideTab.MATCHES -> MatchResultsScreen()
+            }
+        }
+    }
+}
+
+private enum class PizzaTab { PUBLISH, MATCHES }
+
+/**
+ * The Pizza vertical — same tab-switch shape as [RideVerticalScreen].
+ * Its `topBar` includes `.statusBarsPadding()` from the start: an earlier
+ * version of [RideVerticalScreen] omitted it and its buttons silently
+ * stopped receiving taps (they sat under the system status bar) — see
+ * that fix for the full story. Not repeating it here.
+ */
+@Composable
+private fun PizzaVerticalScreen(navController: NavHostController) {
+    var currentTab by rememberSaveable { mutableStateOf(PizzaTab.PUBLISH) }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .statusBarsPadding()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RetroButton(
+                    label = "← Hub",
+                    onClick = { navController.popBackStack() },
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+                RetroButton(
+                    label = "Publish",
+                    onClick = { currentTab = PizzaTab.PUBLISH },
+                    backgroundColor = if (currentTab == PizzaTab.PUBLISH) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    contentColor = if (currentTab == PizzaTab.PUBLISH) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                RetroButton(
+                    label = "Matches",
+                    onClick = { currentTab = PizzaTab.MATCHES },
+                    backgroundColor = if (currentTab == PizzaTab.MATCHES) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    contentColor = if (currentTab == PizzaTab.MATCHES) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
+        },
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            when (currentTab) {
+                PizzaTab.PUBLISH -> PublishPizzaIntentScreen()
+                PizzaTab.MATCHES -> PizzaMatchResultsScreen()
             }
         }
     }

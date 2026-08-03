@@ -101,11 +101,10 @@ abstract class ContractIntent(
  */
 enum class ContractType {
     RIDE_SHARE,
+    PIZZA_SHARE,
 
     // Not implemented yet — listed to document where the engine is headed.
-    ITEM_LOAN,
-    STUDY_GROUP,
-    REAL_ESTATE_VIEWING,
+    ROOMMATE_SEARCH,
 }
 
 /**

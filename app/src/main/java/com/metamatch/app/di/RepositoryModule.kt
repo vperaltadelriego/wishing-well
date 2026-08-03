@@ -1,6 +1,8 @@
 package com.metamatch.app.di
 
+import com.metamatch.app.data.mock.MockPizzaShareRepository
 import com.metamatch.app.data.mock.MockRideShareRepository
+import com.metamatch.app.domain.repository.PizzaShareRepository
 import com.metamatch.app.domain.repository.RideShareRepository
 import dagger.Binds
 import dagger.Module
@@ -13,25 +15,27 @@ import javax.inject.Singleton
  * ==================
  *
  * WHAT: the ONE file in the entire app that decides which concrete
- * [RideShareRepository] implementation everything else gets injected
- * with. This is, quite literally, the "RepositoryStrategy toggle" called
- * for in the project brief.
+ * repository implementation every vertical gets injected with — one
+ * `@Binds` function per vertical ([RideShareRepository],
+ * [PizzaShareRepository], and whichever comes next). This is, quite
+ * literally, the "RepositoryStrategy toggle" called for in the project
+ * brief.
  *
  * WHY a Hilt `@Module` is the right tool for this:
- * every ViewModel and use case in the app asks Hilt for a
- * `RideShareRepository` (the interface), never for a
- * `MockRideShareRepository` or `SupabaseRideShareRepository` by name. Hilt
- * needs exactly one place told "when someone asks for the interface, hand
- * them THIS class" — that instruction lives here, and nowhere else.
+ * every ViewModel and use case in the app asks Hilt for an interface
+ * (`RideShareRepository`, `PizzaShareRepository`, ...), never for a
+ * `Mock*Repository` or `Supabase*Repository` by name. Hilt needs exactly
+ * one place told "when someone asks for this interface, hand them THIS
+ * class" — that instruction lives here, and nowhere else, for every
+ * vertical.
  *
- * HOW to flip the toggle from mock data to a real Supabase backend, once
- * `SupabaseRideShareRepository` is finished (see that class's own
- * documentation for the remaining steps): change the single line inside
- * [bindRideShareRepository] from `MockRideShareRepository` to
- * `SupabaseRideShareRepository`. Every ViewModel, use case, and Compose
- * screen in the app keeps working completely unmodified, because they
- * never depended on which implementation was chosen — only on the
- * `RideShareRepository` interface.
+ * HOW to flip a vertical's toggle from mock data to a real Supabase
+ * backend, once its `Supabase*Repository` is finished: change the single
+ * line inside that vertical's `@Binds` function from `Mock*Repository` to
+ * `Supabase*Repository`. Every ViewModel, use case, and Compose screen in
+ * the app keeps working completely unmodified, because they never
+ * depended on which implementation was chosen — only on the repository
+ * interface.
  *
  * Kotlin/Hilt note: `@Binds` is a lighter-weight alternative to `@Provides`
  * used specifically for "interface X should resolve to implementation Y"
@@ -49,4 +53,10 @@ abstract class RepositoryModule {
     abstract fun bindRideShareRepository(
         mockRideShareRepository: MockRideShareRepository,
     ): RideShareRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPizzaShareRepository(
+        mockPizzaShareRepository: MockPizzaShareRepository,
+    ): PizzaShareRepository
 }
