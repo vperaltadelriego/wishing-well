@@ -2,8 +2,10 @@ package com.metamatch.app.di
 
 import com.metamatch.app.data.mock.MockPizzaShareRepository
 import com.metamatch.app.data.mock.MockRideShareRepository
+import com.metamatch.app.data.mock.MockRoommateRepository
 import com.metamatch.app.domain.repository.PizzaShareRepository
 import com.metamatch.app.domain.repository.RideShareRepository
+import com.metamatch.app.domain.repository.RoommateRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -59,4 +61,10 @@ abstract class RepositoryModule {
     abstract fun bindPizzaShareRepository(
         mockPizzaShareRepository: MockPizzaShareRepository,
     ): PizzaShareRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindRoommateRepository(
+        mockRoommateRepository: MockRoommateRepository,
+    ): RoommateRepository
 }

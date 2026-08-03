@@ -33,6 +33,8 @@ import com.metamatch.app.ui.match.MatchResultsScreen
 import com.metamatch.app.ui.pizza.PizzaMatchResultsScreen
 import com.metamatch.app.ui.pizza.PublishPizzaIntentScreen
 import com.metamatch.app.ui.publish.PublishIntentScreen
+import com.metamatch.app.ui.roomie.PublishRoommateIntentScreen
+import com.metamatch.app.ui.roomie.RoommateMatchResultsScreen
 import com.metamatch.app.ui.theme.MetaMatchTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -79,6 +81,7 @@ private object Routes {
     const val HUB = "hub"
     const val RIDE = "ride"
     const val PIZZA = "pizza"
+    const val ROOMIE = "roomie"
 }
 
 @Composable
@@ -108,6 +111,7 @@ private fun WishingWellApp() {
                 HubScreen(
                     onOpenRide = { navController.navigate(Routes.RIDE) },
                     onOpenPizza = { navController.navigate(Routes.PIZZA) },
+                    onOpenRoomie = { navController.navigate(Routes.ROOMIE) },
                 )
             }
             composable(Routes.RIDE) {
@@ -115,6 +119,9 @@ private fun WishingWellApp() {
             }
             composable(Routes.PIZZA) {
                 PizzaVerticalScreen(navController = navController)
+            }
+            composable(Routes.ROOMIE) {
+                RoommateVerticalScreen(navController = navController)
             }
         }
     }
@@ -258,6 +265,74 @@ private fun PizzaVerticalScreen(navController: NavHostController) {
             when (currentTab) {
                 PizzaTab.PUBLISH -> PublishPizzaIntentScreen()
                 PizzaTab.MATCHES -> PizzaMatchResultsScreen()
+            }
+        }
+    }
+}
+
+private enum class RoommateTab { PUBLISH, MATCHES }
+
+/**
+ * The Roomie vertical — same tab-switch shape as [RideVerticalScreen] /
+ * [PizzaVerticalScreen], `.statusBarsPadding()` included from the start.
+ */
+@Composable
+private fun RoommateVerticalScreen(navController: NavHostController) {
+    var currentTab by rememberSaveable { mutableStateOf(RoommateTab.PUBLISH) }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .statusBarsPadding()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RetroButton(
+                    label = "← Hub",
+                    onClick = { navController.popBackStack() },
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+                RetroButton(
+                    label = "Publish",
+                    onClick = { currentTab = RoommateTab.PUBLISH },
+                    backgroundColor = if (currentTab == RoommateTab.PUBLISH) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    contentColor = if (currentTab == RoommateTab.PUBLISH) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                RetroButton(
+                    label = "Matches",
+                    onClick = { currentTab = RoommateTab.MATCHES },
+                    backgroundColor = if (currentTab == RoommateTab.MATCHES) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    contentColor = if (currentTab == RoommateTab.MATCHES) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
+        },
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            when (currentTab) {
+                RoommateTab.PUBLISH -> PublishRoommateIntentScreen()
+                RoommateTab.MATCHES -> RoommateMatchResultsScreen()
             }
         }
     }

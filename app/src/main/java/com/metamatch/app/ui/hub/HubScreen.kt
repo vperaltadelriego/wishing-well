@@ -25,11 +25,8 @@ import com.metamatch.app.ui.theme.RetroYellow
  *
  * WHAT: the "which kind of match am I looking for?" screen, shown right
  * after the intro splash. Presents every matching vertical the Wishing
- * Well engine offers as its own plaque-styled [RetroCard] — **Ride** and
- * **Pizza** are live; **Roomie** is staged for a later iteration (gets
- * its own plan before being built) and is shown as a disabled
- * "COMING SOON" card so the hub's full shape stays visible even though
- * only two cards are tappable today.
+ * Well engine offers as its own plaque-styled [RetroCard] — **Ride**,
+ * **Pizza**, and **Roomie** are all live.
  *
  * WHY building the 3-card layout now, before Pizza/Roomie exist: adding a
  * new vertical later only means adding one route + one card here — no
@@ -48,7 +45,7 @@ import com.metamatch.app.ui.theme.RetroYellow
  * what hosts them changed.
  */
 @Composable
-fun HubScreen(onOpenRide: () -> Unit, onOpenPizza: () -> Unit) {
+fun HubScreen(onOpenRide: () -> Unit, onOpenPizza: () -> Unit, onOpenRoomie: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -78,8 +75,8 @@ fun HubScreen(onOpenRide: () -> Unit, onOpenPizza: () -> Unit) {
         VerticalPlaque(
             title = "ROOMIE",
             description = "Find someone to share a place with, for a stay of any length.",
-            isAvailable = false,
-            onClick = {},
+            isAvailable = true,
+            onClick = onOpenRoomie,
         )
     }
 }

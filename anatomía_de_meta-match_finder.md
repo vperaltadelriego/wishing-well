@@ -411,14 +411,35 @@ sequenceDiagram
 > ideas generales sobre arrendamiento en México. Antes de que cualquier
 > contrato real dependa de esto, se debe consultar a un abogado.
 
-**Actualización (Etapa 2):** Pizza ya está construida — `PizzaShareIntent`,
-`PizzaShareRepository`, `FindPizzaMatchesUseCase` y las pantallas
-`ui/pizza/` existen y funcionan siguiendo exactamente el diseño descrito
-en §5.2. Roomie (§5.1) sigue siendo la única vertical pendiente (ver
-`CLAUDE.md`, sección "Not yet implemented"); esta sección sigue
-documentando su requisito para cuando llegue su propia etapa.
+**Actualización (Etapas 2 y 3):** Pizza y Roomie ya están construidas —
+ninguna vertical queda pendiente en el hub. Esta sección se conserva tal
+cual porque documenta el *razonamiento* detrás de cada diseño, no sólo el
+resultado; sigue siendo la referencia si algún día se ajusta alguna de
+las dos.
 
-### 5.1 Roomie — subarriendo/arrendamiento
+### 5.1 Roomie — subarriendo/arrendamiento — ✅ construida
+
+Ver `domain/model/RoommateIntent.kt`, `domain/model/RoommateMatchResult.kt`
+y `domain/usecase/FindRoommateMatchesUseCase.kt` para la implementación
+real. Esta vertical introduce una diferencia estructural importante
+frente a Ride y Pizza: **el emparejamiento es asimétrico, no por
+clústeres**. Ride agrupa viajeros que van al mismo lugar; Pizza agrupa
+compradores del mismo pedido — ambos hacen crecer un solo grupo de
+"pares". Roomie, en cambio, tiene dos lados genuinamente distintos: quien
+**ofrece** un lugar (`RoommateRole.OFFERING`) y quien **busca** uno
+(`RoommateRole.SEEKING`). `FindRoommateMatchesUseCase` no hace crecer un
+grupo — empareja cada intent contra *cada* candidato del lado opuesto
+compatible, devolviendo una lista de opciones (como cuando uno navega
+anuncios de renta), no un grupo fusionado.
+
+Otra diferencia notable: **el precio nunca es un filtro**, sólo una brecha
+informativa (`RoommateMatchResult.priceGapPercent`) — el ejemplo del
+propio Victor (renta pedida 8,500, presupuesto 8,000) debe seguir
+apareciendo como match, no desaparecer por no calzar exactamente. Y hay
+una acción que ninguna otra vertical tiene: **"Adjust My Price"**, que
+llama a `UpdateRoommateIntentUseCase` para editar el listing ya publicado
+sin tener que republicarlo — la respuesta concreta al requisito de
+"los términos deben poder cambiar después del match."
 
 La analogía correcta cambia según la duración de la estancia:
 
