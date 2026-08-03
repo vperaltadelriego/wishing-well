@@ -1,12 +1,18 @@
-# MetaMatch
+# Wishing Well
+
+*a meta-finder for wild coincidences — powered by the MetaMatch engine*
 
 A general-purpose **meta-matching engine** for Android, built in Kotlin with
-Jetpack Compose and Clean Architecture. The first feature built on top of
-the engine is **ride-share carpooling with advance scheduling** — publish a
-ride request today for a trip years from now (a flight landing in 2030 is a
-first-class use case), get matched with nearby travelers by a
-geospatial-centroid + pooled-budget algorithm, with built-in anti-spam
-limits, community/security filters, and a reputation system.
+Jetpack Compose and Clean Architecture. "MetaMatch" is the engine's own
+name; "Wishing Well" is the branded product built on top of it, reached
+through an intro splash and a hub screen that lists each matching
+vertical the engine powers. The first vertical is **ride-share carpooling
+with advance scheduling** — publish a ride request today for a trip years
+from now (a flight landing in 2030 is a first-class use case), get matched
+with nearby travelers by a geospatial-centroid + pooled-budget algorithm,
+with built-in anti-spam limits, community/security filters, and a
+reputation system. Two more verticals (Pizza, Roomie) are staged on the
+hub screen as "coming soon," each planned and built as its own iteration.
 
 > **Status: MVP, iteration 1 of a staged build.** The core engine and the
 > ride-share matching module are implemented and run out of the box with
@@ -152,6 +158,11 @@ spatial indexes, Row Level Security policies, and SQL functions
 (`find_candidate_intents`, `compute_centroid`) that mirror
 `FindMatchesUseCase.kt`'s logic server-side. Apply it via the Supabase SQL
 Editor or CLI once `SupabaseRideShareRepository.kt` is wired in.
+
+The actual Supabase project (once started) lives in a separate **private**
+repo, `wishing-well-backend` — reserved ahead of time so real project
+credentials never have to touch this public repo's history. Nothing there
+yet; `schema.sql` above is the versioned source of truth for its design.
 
 ## Roadmap
 
