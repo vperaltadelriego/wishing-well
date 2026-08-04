@@ -36,6 +36,8 @@ import com.metamatch.app.ui.publish.PublishIntentScreen
 import com.metamatch.app.ui.roomie.PublishRoommateIntentScreen
 import com.metamatch.app.ui.roomie.RoommateMatchResultsScreen
 import com.metamatch.app.ui.theme.MetaMatchTheme
+import com.metamatch.app.ui.wish.CastWishScreen
+import com.metamatch.app.ui.wish.WishStatsScreen
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -82,6 +84,7 @@ private object Routes {
     const val RIDE = "ride"
     const val PIZZA = "pizza"
     const val ROOMIE = "roomie"
+    const val WISH = "wish"
 }
 
 @Composable
@@ -112,6 +115,7 @@ private fun WishingWellApp() {
                     onOpenRide = { navController.navigate(Routes.RIDE) },
                     onOpenPizza = { navController.navigate(Routes.PIZZA) },
                     onOpenRoomie = { navController.navigate(Routes.ROOMIE) },
+                    onOpenWish = { navController.navigate(Routes.WISH) },
                 )
             }
             composable(Routes.RIDE) {
@@ -122,6 +126,9 @@ private fun WishingWellApp() {
             }
             composable(Routes.ROOMIE) {
                 RoommateVerticalScreen(navController = navController)
+            }
+            composable(Routes.WISH) {
+                WishVerticalScreen(navController = navController)
             }
         }
     }
@@ -333,6 +340,77 @@ private fun RoommateVerticalScreen(navController: NavHostController) {
             when (currentTab) {
                 RoommateTab.PUBLISH -> PublishRoommateIntentScreen()
                 RoommateTab.MATCHES -> RoommateMatchResultsScreen()
+            }
+        }
+    }
+}
+
+private enum class WishTab { CAST, STATS }
+
+/**
+ * The Wish vertical — same tab-switch shape as the other three,
+ * `.statusBarsPadding()` included from the start. Tabs are "Cast" (toss
+ * a wish in, see the globe) and "Stats" (what everyone else has been
+ * wishing for) rather than "Publish"/"Matches," since there is no
+ * matching here to speak of — see `ui/wish/CastWishScreen.kt`'s own docs.
+ */
+@Composable
+private fun WishVerticalScreen(navController: NavHostController) {
+    var currentTab by rememberSaveable { mutableStateOf(WishTab.CAST) }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .statusBarsPadding()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                RetroButton(
+                    label = "← Hub",
+                    onClick = { navController.popBackStack() },
+                    backgroundColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+                RetroButton(
+                    label = "Cast",
+                    onClick = { currentTab = WishTab.CAST },
+                    backgroundColor = if (currentTab == WishTab.CAST) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    contentColor = if (currentTab == WishTab.CAST) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                RetroButton(
+                    label = "Stats",
+                    onClick = { currentTab = WishTab.STATS },
+                    backgroundColor = if (currentTab == WishTab.STATS) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                    contentColor = if (currentTab == WishTab.STATS) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+            }
+        },
+    ) { innerPadding ->
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            when (currentTab) {
+                WishTab.CAST -> CastWishScreen()
+                WishTab.STATS -> WishStatsScreen()
             }
         }
     }

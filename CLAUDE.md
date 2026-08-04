@@ -31,8 +31,9 @@ Status: **MVP iteration 1 of 4** — Module 1 (core engine) + Module 2 (ride
 share matching) are implemented and buildable. Module 3 (chat/handshake
 ticket) and Module 4 (monetization engine, beyond the anti-spam micro-fee)
 are intentionally deferred — see "Not yet implemented" below. The app is
-a multi-vertical hub: **Ride**, **Pizza**, and **Roomie** are all live —
-no "coming soon" cards remain on the hub.
+a multi-vertical hub: **Ride**, **Pizza**, **Roomie**, and **Wish**
+(unstructured wishes + global statistics) are all live — no "coming
+soon" cards remain on the hub.
 
 ## Stack / versions (see `gradle/libs.versions.toml` for exact numbers)
 
@@ -54,6 +55,10 @@ domain/model/       Pure Kotlin data classes. No Android imports. Zero deps.
                      "this match = a contract" data captured on
                      acceptance), UserRule (sealed), UserIntegrityScore,
                      GeoPoint (Haversine distance + centroid math).
+                     UnstructuredWish/WishCategory/WishScope/WishStatistics
+                     — deliberately NOT ContractIntent subtypes; see
+                     UnstructuredWish.kt's class doc for why a wish with
+                     nothing to match on gets its own small model instead.
 domain/policy/       PlatformPolicy — every tunable business rule (free-tier
                      limit, micro-fee, verification threshold) in ONE place.
 domain/exception/    MicroFeeRequiredException.
@@ -77,14 +82,22 @@ domain/usecase/      PublishRideIntentUseCase, FindMatchesUseCase (Ride's
                      gate). AntiSpamRules.kt holds the ONE anti-spam rule
                      CheckAntiSpamUseCase (Ride), CheckPizzaAntiSpamUseCase
                      (Pizza), and CheckRoommateAntiSpamUseCase (Roomie) all
-                     delegate to.
+                     delegate to. CategorizeWishTextUseCase (keyword
+                     heuristic, not real NLP), CastWishUseCase,
+                     ComputeWishStatisticsUseCase (Wish — no anti-spam
+                     check at all; see CastWishUseCase's own docs for why).
 data/mock/           MockRideShareRepository, MockPizzaShareRepository,
-                     MockRoommateRepository — in-memory, seeded, what the
-                     app runs on by default. @Singleton, no network.
+                     MockRoommateRepository, MockWishRepository — in-memory,
+                     seeded, what the app runs on by default. @Singleton, no
+                     network. WishSeedData.kt alone seeds 1,000+ wishes
+                     (a small template bank cross-multiplied against many
+                     countries/cities) so Wish statistics look real on
+                     first run — see that file's own doc for why it's
+                     generated rather than ~150 hand-typed literals.
 data/remote/         SupabaseRideShareRepository, SupabasePizzaShareRepository,
-                     SupabaseRoommateRepository — UNFINISHED skeletons (every
-                     method is `TODO()`). See each file's doc for the exact
-                     steps to finish it.
+                     SupabaseRoommateRepository, SupabaseWishRepository —
+                     UNFINISHED skeletons (every method is `TODO()`). See
+                     each file's doc for the exact steps to finish it.
 di/                  Hilt modules. RepositoryModule.kt is THE ONE FILE that
                      picks Mock vs Supabase, per vertical (one @Binds each)
                      — everything else is unaffected by that choice.
@@ -107,9 +120,15 @@ ui/pizza/            Publish + Match Results screen/ViewModel pairs for the
 ui/roomie/           Publish + Match Results screen/ViewModel pairs for the
                      Roomie vertical; the Match Results screen also has an
                      "Adjust My Price" action calling UpdateRoommateIntentUseCase.
-MainActivity.kt       NavHost: intro -> hub -> {ride, pizza, roomie} (each
-                     its own Publish/Matches tab switch). See its file doc
-                     for why Navigation-Compose was adopted here.
+ui/wish/             WishGlobeCanvas (hand-drawn rotating globe + spark
+                     animations, Canvas-only, no image assets), CastWishScreen
+                     (toss a free-text wish in), WishStatsScreen (scope-
+                     filtered statistics + a recent-wishes feed). Both
+                     screens show a "DEMO DATA" PixelBadge — see
+                     SupabaseWishRepository.kt's own docs for why.
+MainActivity.kt       NavHost: intro -> hub -> {ride, pizza, roomie, wish}
+                     (each its own two-tab screen). See its file doc for
+                     why Navigation-Compose was adopted here.
 MetaMatchApplication.kt  @HiltAndroidApp entry point.
 ```
 
@@ -123,10 +142,10 @@ Not required to run the app today; becomes load-bearing once
 **Never import a `Mock*Repository` or `Supabase*Repository` outside of
 `di/RepositoryModule.kt`.** Every use case, every ViewModel depends on its
 vertical's repository interface only (`RideShareRepository`,
-`PizzaShareRepository`, `RoommateRepository`). This is what makes the
-mock/production swap a one-line change, per vertical. If you're adding a
-new use case or ViewModel and find yourself importing a concrete
-repository class, stop — inject the interface instead.
+`PizzaShareRepository`, `RoommateRepository`, `WishRepository`). This is
+what makes the mock/production swap a one-line change, per vertical. If
+you're adding a new use case or ViewModel and find yourself importing a
+concrete repository class, stop — inject the interface instead.
 
 ## Conventions
 
@@ -145,8 +164,19 @@ repository class, stop — inject the interface instead.
 ## Not yet implemented (do not assume these exist)
 
 - `SupabaseRideShareRepository` / `SupabasePizzaShareRepository` /
-  `SupabaseRoommateRepository` — skeletons only, throw `TODO()`.
+  `SupabaseRoommateRepository` / `SupabaseWishRepository` — skeletons
+  only, throw `TODO()`.
 - Any real network/auth calls, Supabase SDK dependency, or API keys.
+- **A real shared backend for Wish.** Every "most common wish" statistic
+  runs entirely on `WishSeedData.kt` plus whatever this one device has
+  cast this session — not real global data. Both `ui/wish/` screens show
+  a "DEMO DATA" banner for exactly this reason; do not present these
+  numbers as real anywhere else (docs, screenshots) without the same
+  caveat.
+- Login/accounts, progressive identity verification (biometric, official
+  ID/CURP), a contribution-weighted rating system, and the 8-bit→32-bit
+  visual upgrade — all requested, all staged as their own future
+  iterations, none started.
 - Module 3: visual meeting ticket, in-app chat, `SecurityAuditLog`. Roomie's
   post-match verification guidance (interview, references, background
   check) is currently just static text pointing at this — no real
@@ -166,5 +196,6 @@ repository class, stop — inject the interface instead.
 - `./gradlew testDebugUnitTest` — fast JVM unit tests for `domain/`
   (`FindMatchesUseCaseTest`, `FindPizzaMatchesUseCaseTest`,
   `FindRoommateMatchesUseCaseTest`, `UpdateRoommateIntentUseCaseTest`,
+  `CategorizeWishTextUseCaseTest`, `ComputeWishStatisticsUseCaseTest`,
   `CheckAntiSpamUseCaseTest`, `GeoPointTest`, `UserIntegrityScoreTest`).
   These are the tests to run after touching any matching/anti-spam logic.

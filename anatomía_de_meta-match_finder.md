@@ -528,7 +528,43 @@ los campos deben leerse como conceptos genéricos de "compra compartida"
 
 ---
 
-## 6. Glosario rápido (para cuando te topes con estas palabras)
+## 6. Cuando NO conviene heredar de `ContractIntent` — el caso de Wish
+
+Todo lo anterior (Ride, Pizza, Roomie) hereda de `ContractIntent` porque
+las tres cosas son, en el fondo, la misma idea: "quiero que me emparejen
+con alguien para X." Pero la Etapa 4 agregó algo distinto — un deseo sin
+estructura ("deseo la paz del mundo"), que no busca emparejamiento con
+nadie, no tiene términos financieros, no tiene un ciclo de vida de
+contrato. Forzarlo a heredar de `ContractIntent` habría significado
+cargar campos que no significan nada para él (`financialTerms`,
+`verificationTier`, un `status` de MATCHED/CANCELLED que nunca aplicaría).
+
+Por eso `domain/model/UnstructuredWish.kt` es una clase completamente
+aparte, con su propio `WishRepository` (que ni siquiera extiende
+`ContractRepository<T, M>` — no hay match que guardar, no hay contrato
+que formalizar). Es la lección contraria a la de la Etapa 2 (cuándo SÍ
+generalizar, con `ContractRepository`): a veces la respuesta correcta no
+es "encajarlo en la abstracción que ya tengo," sino reconocer que el
+concepto nuevo es genuinamente distinto y merece su propio modelo,
+pequeño y honesto sobre lo que sí y no hace.
+
+Un detalle curioso: `UnstructuredWish` sí reutiliza `ContractType` (el
+mismo enum de `ContractIntent.kt`) en su campo opcional
+`structuredContractType` — no porque herede nada, sino porque unos pocos
+deseos sembrados representan a alguien que, en el mismo gesto de "tirar
+un deseo al pozo," en realidad buscaba algo específico (un ride, dividir
+una pizza, un roomie). Reutilizar el vocabulario ya existente ahí, sin
+reutilizar la clase entera, es la clase de decisión pequeña que vale la
+pena notar cuando la tomes tú también.
+
+Ver `domain/model/UnstructuredWish.kt`, `domain/repository/WishRepository.kt`
+y `ui/wish/WishGlobeCanvas.kt` (el globo animado, dibujado enteramente
+con `Canvas` — sin imágenes externas, mismo espíritu que el pozo de
+`IntroScreen.kt`) para la implementación real.
+
+---
+
+## 7. Glosario rápido (para cuando te topes con estas palabras)
 
 | Término | Qué significa aquí |
 |---|---|
@@ -545,7 +581,7 @@ los campos deben leerse como conceptos genéricos de "compra compartida"
 
 ---
 
-## 7. Cómo seguir explorando
+## 8. Cómo seguir explorando
 
 1. Corre los tests rápidos para ver la lógica de negocio en acción sin
    abrir el emulador: `./gradlew testDebugUnitTest`.

@@ -6,21 +6,38 @@ A general-purpose **meta-matching engine** for Android, built in Kotlin with
 Jetpack Compose and Clean Architecture. "MetaMatch" is the engine's own
 name; "Wishing Well" is the branded product built on top of it, reached
 through an intro splash and a hub screen that lists each matching
-vertical the engine powers. The first vertical is **ride-share carpooling
-with advance scheduling** — publish a ride request today for a trip years
-from now (a flight landing in 2030 is a first-class use case), get matched
-with nearby travelers by a geospatial-centroid + pooled-budget algorithm,
-with built-in anti-spam limits, community/security filters, and a
-reputation system. Two more verticals (Pizza, Roomie) are staged on the
-hub screen as "coming soon," each planned and built as its own iteration.
+vertical the engine powers. Four verticals are live today:
 
-> **Status: MVP, iteration 1 of a staged build.** The core engine and the
-> ride-share matching module are implemented and run out of the box with
-> zero backend setup. A production Supabase (PostgreSQL + PostGIS) backend
-> is fully designed (`schema.sql`) but not wired in yet — see
-> [Roadmap](#roadmap). This project doubles as a structured Kotlin-learning
-> exercise: every class carries a WHAT/WHY/HOW doc comment explaining the
-> code itself and the architectural decision behind it.
+- **Ride** — ride-share carpooling with advance scheduling: publish a
+  ride request today for a trip years from now (a flight landing in 2030
+  is a first-class use case), matched by a geospatial-centroid +
+  pooled-budget algorithm.
+- **Pizza** — split a shared purchase (a pizza, a Costco run) by
+  proximity, product, and a fractional share of the order.
+- **Roomie** — sublease/roommate matching with an asymmetric
+  seeking/offering model, a price gap shown honestly instead of
+  filtered out, and an "Adjust My Price" renegotiation action.
+- **Wish** — toss any *unstructured* wish into the well ("deseo la paz
+  del mundo") and see aggregate statistics (most common wish per
+  country/region/city, % physically impossible, % wishing to see a
+  deceased loved one again) against a rotating, hand-drawn globe.
+
+> **Status: MVP, staged build, iteration 4.** All four verticals above
+> run out of the box with zero backend setup. A production Supabase
+> (PostgreSQL + PostGIS) backend is designed (`schema.sql`) but not wired
+> in yet — everything, including Wish's global statistics, runs on
+> seeded in-memory mock data. See [Roadmap](#roadmap). This project
+> doubles as a structured Kotlin-learning exercise: every class carries a
+> WHAT/WHY/HOW doc comment explaining the code itself and the
+> architectural decision behind it — see
+> `anatomía_de_meta-match_finder.md` for a guided, beginner-friendly tour.
+
+> **⚠️ Wish statistics are demo data.** "What the world is wishing for"
+> only becomes literally true once wishes are shared across every
+> device via a real backend (see `SupabaseWishRepository.kt`). Until
+> then, every number comes from `WishSeedData.kt`'s generated pool plus
+> whatever this one device has cast this session — both `ui/wish/`
+> screens show an in-app "DEMO DATA" banner for the same reason.
 
 ---
 
@@ -35,10 +52,10 @@ its first concrete use case.
 
 ## Screenshots
 
-*(Run the app in Android Studio's Compose Preview or an emulator to capture
-these — the retro 8-bit theme, the Publish Intent form with its live
-anti-spam badge, and the Match Results list are the three views to
-showcase.)*
+*(Pending — real screenshots of all four verticals, including the Wish
+Globe animation, will be added once the app is ready to finalize. In the
+meantime: run it yourself, it takes under a minute — see
+[Getting started](#getting-started).)*
 
 ## Architecture
 
@@ -169,21 +186,43 @@ yet; `schema.sql` above is the versioned source of truth for its design.
 This project is being built in stages on purpose, so each piece of Kotlin
 can be reviewed and understood before the next lands:
 
-1. ✅ **Module 1 — Core Meta-Match Engine**: `ContractIntent`,
-   `UserIntegrityScore`, anti-spam rate limiting.
-2. ✅ **Module 2 — Ride Share Contract & Advance Scheduling**: geospatial
-   centroid + budget matching, community/security filters, Publish + Match
-   Results screens.
-3. ⏳ **Module 3 — Post-Match Protocol & Handshake**: visual meeting ticket
-   ("Yellow Circle #37"), in-app chat, `SecurityAuditLog`.
-4. ⏳ **Module 4 — Monetization & Verification Locks**: `MonetizationEngine`
-   (per-transaction fee, enterprise B2B subscriptions), ID-verification gate
-   for high-value contracts.
-5. ⏳ **Backend cutover**: finish `SupabaseRideShareRepository.kt`, apply
-   `schema.sql`, flip `di/RepositoryModule.kt` from Mock to Supabase.
+1. ✅ **Stage 1 — Wishing Well rebrand**: intro splash + hub navigation
+   (Navigation-Compose), a shared legal-consent gate before publishing
+   any intent, and `ContractRecord` — the "every match is conceptually a
+   contract" data model.
+2. ✅ **Stage 2 — Meta-Match Pizza**: shared-purchase matching by
+   proximity, product, and fractional units; generalized
+   `ContractRepository<T, M>` once a second real vertical justified it.
+3. ✅ **Stage 3 — Meta-Match Roomie**: asymmetric seeking/offering
+   matching, an honestly-shown (never filtered) price gap, and an
+   "Adjust My Price" renegotiation action.
+4. ✅ **Stage 4 — The Wish Globe**: unstructured wishes with no matching
+   at all, scope-filtered global statistics, and a hand-drawn rotating
+   globe — all on seeded demo data (see the caveat above).
+5. ⏳ **Accounts & differentiated login**: lightweight sign-in for the
+   Wish layer (email, or email + phone without a one-account-per-number
+   limit, to support multiple family members sharing a phone number).
+6. ⏳ **Progressive identity verification**: gradual tiers from
+   email-only up through biometric and official-document (CURP or
+   equivalent) verification, visible on a user's profile — higher-stakes
+   verticals like Roomie expect a fuller profile.
+7. ⏳ **Contribution-weighted ratings**: a user's rating weight scales
+   with what they actually contributed to a given transaction (e.g. a
+   50%-of-the-bill participant in a Pizza split shouldn't be outvoted
+   equally by three 16.7% participants) — explicitly designed against
+   "tyranny of the majority," while still giving free-tier users some
+   (non-zero) weight.
+8. ⏳ **Visual upgrade, 8-bit → richer "32-bit"-style rendering**: more
+   detail within the same code-only `Canvas` approach — no image assets,
+   same "clone and run" promise.
+9. ⏳ **Backend cutover**: finish every `Supabase*Repository.kt` skeleton,
+   apply `schema.sql` (extended for Pizza/Roomie/Wish), flip
+   `di/RepositoryModule.kt` from Mock to Supabase for each vertical —
+   the point at which Wish's statistics become real.
 
 See `CLAUDE.md` for a machine-readable map of exactly what exists today
-versus what's staged next.
+versus what's staged next, and `anatomía_de_meta-match_finder.md` for a
+guided walkthrough of the codebase.
 
 ## License
 

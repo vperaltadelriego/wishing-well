@@ -26,7 +26,8 @@ import com.metamatch.app.ui.theme.RetroYellow
  * WHAT: the "which kind of match am I looking for?" screen, shown right
  * after the intro splash. Presents every matching vertical the Wishing
  * Well engine offers as its own plaque-styled [RetroCard] — **Ride**,
- * **Pizza**, and **Roomie** are all live.
+ * **Pizza**, **Roomie**, and **Wish** (a wish with no structure at all,
+ * plus global statistics) are all live.
  *
  * WHY building the 3-card layout now, before Pizza/Roomie exist: adding a
  * new vertical later only means adding one route + one card here — no
@@ -45,7 +46,12 @@ import com.metamatch.app.ui.theme.RetroYellow
  * what hosts them changed.
  */
 @Composable
-fun HubScreen(onOpenRide: () -> Unit, onOpenPizza: () -> Unit, onOpenRoomie: () -> Unit) {
+fun HubScreen(
+    onOpenRide: () -> Unit,
+    onOpenPizza: () -> Unit,
+    onOpenRoomie: () -> Unit,
+    onOpenWish: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -77,6 +83,12 @@ fun HubScreen(onOpenRide: () -> Unit, onOpenPizza: () -> Unit, onOpenRoomie: () 
             description = "Find someone to share a place with, for a stay of any length.",
             isAvailable = true,
             onClick = onOpenRoomie,
+        )
+        VerticalPlaque(
+            title = "WISH",
+            description = "Toss any wish into the well — structured or not — and see what the world is wishing for.",
+            isAvailable = true,
+            onClick = onOpenWish,
         )
     }
 }
